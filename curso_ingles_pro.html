@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inglês Fonético PRO - Neuro Inclusão</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+        body { font-family: 'Nunito', sans-serif; background-color: #f8fafc; color: #334155; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .fade-in { animation: fadeIn 0.4s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .vocab-card { transition: all 0.2s ease; border: 1px solid #e5e7eb; }
+        .vocab-card:hover { border-color: #3b82f6; box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.2); transform: translateY(-2px); }
+        
+        .recording-pulse { animation: pulse-red 1.5s infinite; }
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        
+        .dialogue-bubble { transition: all 0.3s ease; }
+        .dialogue-bubble:hover { transform: scale(1.01); }
+    </style>
+</head>
+<body class="antialiased overflow-hidden h-screen flex">
+
+    <!-- SIDEBAR MENU -->
+    <aside id="sidebar" class="bg-white w-72 h-full border-r border-gray-200 flex flex-col z-30 shrink-0">
+        <div class="p-6 border-b border-gray-100 flex items-center gap-3">
+            <div class="bg-blue-100 p-2 rounded-lg text-blue-600">
+                <i class="fa-solid fa-language text-2xl"></i>
+            </div>
+            <h1 class="font-extrabold text-gray-800 leading-tight tracking-tight text-lg">Inglês<br>Fonético PRO</h1>
+        </div>
+
+        <div class="p-6 bg-slate-50 border-b border-gray-100">
+            <div class="flex justify-between items-end mb-2">
+                <span class="text-sm font-bold text-gray-600 uppercase tracking-wider">Progresso</span>
+                <span id="progress-text" class="text-sm font-black text-blue-600">0%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden mb-2">
+                <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-700 ease-out" style="width: 0%"></div>
+            </div>
+            <!-- Feedback Motivacional do Progresso -->
+            <p id="progress-feedback-msg" class="text-[11px] font-bold text-blue-500 italic text-center mb-1 leading-tight"></p>
+        </div>
+
+        <nav id="module-nav" class="flex-1 overflow-y-auto p-4 space-y-2 no-scrollbar">
+            <!-- Botões gerados dinamicamente via JS -->
+        </nav>
+    </aside>
+
+    <!-- ÁREA PRINCIPAL -->
+    <main class="flex-1 flex flex-col h-full overflow-hidden bg-slate-50 relative">
+        <header class="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 shrink-0 shadow-sm z-10">
+            <div class="flex items-center gap-2 text-sm font-medium text-gray-500">
+                <i class="fa-solid fa-graduation-cap"></i> Plataforma de Ensino Interativa
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs">AL</div>
+            </div>
+        </header>
+
+        <div id="content-area" class="flex-1 overflow-y-auto p-4 md:p-8 relative">
+            <div id="active-module-container" class="max-w-5xl mx-auto pb-20 fade-in">
+                <!-- O CONTEÚDO ENTRA AQUI -->
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // COLOQUE SUA CHAVE DA API AQUI SE FOR USAR NO SEU COMPUTADOR OU NO NETLIFY
+        const apiKey = "AIzaSyAOjGNgd4L5auo50hJjmX6wuaC_gUQuqwE"; 
+
+        // ==========================================
+        // DADOS COMPRIMIDOS (Vocabulário da Sandra)
+        // ==========================================
+        const rawVocab = `
+I|Eu|ái|Pronome;You|Você|iú|Pronome;He|Ele|rí|Pronome;She|Ela|xí|Pronome;It|Ele/Ela (objeto)|ít|Pronome;We|Nós|uí|Pronome;They|Eles/Elas|dhêi|Pronome;Me|Me / mim|mí|Pronome;My|Meu/Minha|mái|Pronome;Your|Seu/Sua|iór|Pronome;His|Dele|ríz|Pronome;Her|Dela|râr|Pronome;Our|Nosso|áur|Pronome;Their|Deles|dhér|Pronome;A|Um/Uma|â|Artigo;An|Um/Uma|én|Artigo;The|O/A|dhâ|Artigo;This|Este/Esta|dhís|Pronome;That|Aquele/Aquela|dhét|Pronome;These|Estes/Estas|dhíz|Pronome;
+Be|Ser/Estar|bí|Verbo;Have|Ter|rév|Verbo;Do|Fazer|dú|Verbo;Say|Dizer|sêi|Verbo;Go|Ir|gôu|Verbo;Get|Pegar/Conseguir|gét|Verbo;Make|Fazer/Criar|mêik|Verbo;Know|Saber/Conhecer|nôu|Verbo;Think|Pensar|thínk|Verbo;Take|Pegar/Levar|têik|Verbo;See|Ver|sí|Verbo;Come|Vir|kâm|Verbo;Want|Querer|uânt|Verbo;Use|Usar|iúz|Verbo;Find|Encontrar|fáind|Verbo;Give|Dar|guív|Verbo;Tell|Contar|tél|Verbo;Work|Trabalhar|uârk|Verbo;Call|Chamar/Ligar|kól|Verbo;Try|Tentar|trái|Verbo;Ask|Perguntar|ásk|Verbo;Need|Precisar|níd|Verbo;Feel|Sentir|fíil|Verbo;Leave|Sair/Deixar|líiv|Verbo;Put|Colocar|pút|Verbo;Bring|Trazer|bríng|Verbo;Begin|Começar|bigín|Verbo;Keep|Manter|kíip|Verbo;Let|Deixar|lét|Verbo;Help|Ajudar|rélp|Verbo;Talk|Conversar|tók|Verbo;Turn|Virar|târn|Verbo;Start|Iniciar|stárt|Verbo;Show|Mostrar|xôu|Verbo;Hear|Ouvir|rír|Verbo;Play|Jogar/Brincar|plêi|Verbo;Run|Correr|rân|Verbo;Move|Mover|múuv|Verbo;Live|Morar/Viver|lív|Verbo;Believe|Acreditar|bilíiv|Verbo;Hold|Segurar|rôuld|Verbo;Write|Escrever|ráit|Verbo;Provide|Fornecer|prováid|Verbo;Sit|Sentar|sít|Verbo;Stand|Ficar em pé|sténd|Verbo;Lose|Perder|lúuz|Verbo;Pay|Pagar|pêi|Verbo;Meet|Encontrar|míit|Verbo;Include|Incluir|inclúud|Verbo;Continue|Continuar|contíniu|Verbo;Eat|Comer|ít|Verbo;Drink|Beber|drínk|Verbo;Sleep|Dormir|slíp|Verbo;Speak|Falar|spík|Verbo;Love|Amar|lâv|Verbo;Buy|Comprar|bái|Verbo;
+Good|Bom|gúd|Adjetivo;Bad|Ruim|béd|Adjetivo;New|Novo|niú|Adjetivo;Old|Velho|ôuld|Adjetivo;Big|Grande|bíg|Adjetivo;Small|Pequeno|smól|Adjetivo;Easy|Fácil|ízi|Adjetivo;Hard|Difícil|rárd|Adjetivo;Fast|Rápido|fést|Adjetivo;Slow|Devagar|slôu|Adjetivo;Happy|Feliz|répi|Adjetivo;Sad|Triste|séd|Adjetivo;Busy|Ocupado|bízi|Adjetivo;Free|Livre|frí|Adjetivo;Right|Certo|ráit|Adjetivo;Wrong|Errado|róng|Adjetivo;Open|Aberto|ôupen|Adjetivo;Closed|Fechado|clôuzd|Adjetivo;Full|Cheio|fúl|Adjetivo;Empty|Vazio|émpti|Adjetivo;Early|Cedo|ârli|Adjetivo;Late|Tarde|lêit|Adjetivo;Important|Importante|impórtânt|Adjetivo;Different|Diferente|dífrent|Adjetivo;Same|Mesmo|sêim|Adjetivo;Sure|Certo/Seguro|xór|Adjetivo;Ready|Pronto|rêdi|Adjetivo;Tired|Cansado|táird|Adjetivo;Hungry|Com fome|rângri|Adjetivo;Thirsty|Com sede|thârsti|Adjetivo;Beautiful|Bonito|biútiful|Adjetivo;Ugly|Feio|âgli|Adjetivo;Cheap|Barato|tchíp|Adjetivo;Expensive|Caro|ikspénsiv|Adjetivo;Clean|Limpo|clín|Adjetivo;Dirty|Sujo|dârti|Adjetivo;Safe|Seguro|sêif|Adjetivo;Dangerous|Perigoso|dêinjerâs|Adjetivo;Simple|Simples|símpl|Adjetivo;Difficult|Difícil|dífikult|Adjetivo;Strong|Forte|stróng|Adjetivo;Weak|Fraco|uíik|Adjetivo;Young|Jovem|iâng|Adjetivo;Old-fashioned|Antiquado|ôuld fêshen|Adjetivo;Friendly|Amigável|fréndli|Adjetivo;Polite|Educado|poláit|Adjetivo;Rude|Grosseiro|rúud|Adjetivo;Quiet|Quieto|quáiêt|Adjetivo;Loud|Barulhento|láud|Adjetivo;Nice|Legal|náis|Adjetivo;
+Time|Tempo/Hora|táim|Substantivo;Day|Dia|dêi|Substantivo;Night|Noite|náit|Substantivo;People|Pessoas|píipl|Substantivo;Man|Homem|mén|Substantivo;Woman|Mulher|uúman|Substantivo;Child|Criança|tcháild|Substantivo;Friend|Amigo|frénd|Substantivo;Family|Família|fémili|Substantivo;Work|Trabalho|uârk|Substantivo;Job|Emprego|djób|Substantivo;Money|Dinheiro|mâni|Substantivo;House|Casa|ráus|Substantivo;Home|Lar|rôum|Substantivo;Room|Quarto/Sala|rúum|Substantivo;Door|Porta|dór|Substantivo;Window|Janela|uíndou|Substantivo;Phone|Telefone|fôun|Substantivo;Computer|Computador|compiúter|Substantivo;Internet|Internet|ínternet|Substantivo;Food|Comida|fúd|Substantivo;Water|Água|uó-ter|Substantivo;Coffee|Café|cófi|Substantivo;Tea|Chá|tí|Substantivo;Breakfast|Café da manhã|brékfast|Substantivo;Lunch|Almoço|lânch|Substantivo;Dinner|Jantar|díner|Substantivo;Restaurant|Restaurante|réstorânt|Substantivo;Table|Mesa|têibol|Substantivo;Chair|Cadeira|tchér|Substantivo;Car|Carro|kár|Substantivo;Bus|Ônibus|bâs|Substantivo;Street|Rua|stríit|Substantivo;City|Cidade|síti|Substantivo;Country|País|cântri|Substantivo;School|Escola|skúl|Substantivo;Student|Estudante|stúdent|Substantivo;Teacher|Professor|tíitcher|Substantivo;Book|Livro|búk|Substantivo;Pen|Caneta|pén|Substantivo;Paper|Papel|pêiper|Substantivo;Meeting|Reunião|míiting|Substantivo;Office|Escritório|ófiss|Substantivo;Company|Empresa|câmpani|Substantivo;Boss|Chefe|bóss|Substantivo;Client|Cliente|cláiênt|Substantivo;Problem|Problema|próblem|Substantivo;Solution|Solução|solúshân|Substantivo;Question|Pergunta|kuéstchân|Substantivo;Answer|Resposta|énsâr|Substantivo;Help|Ajuda|rélp|Substantivo;Service|Serviço|sârvis|Substantivo;Price|Preço|práis|Substantivo;Store|Loja|stór|Substantivo;Market|Mercado|márket|Substantivo;Bank|Banco|bénk|Substantivo;Card|Cartão|kárd|Substantivo;Cash|Dinheiro vivo|késh|Substantivo;Bill|Conta|bíl|Substantivo;Change|Troco|tchêindj|Substantivo;Travel|Viagem|trével|Substantivo;Trip|Viagem curta|tríp|Substantivo;Airport|Aeroporto|érpórt|Substantivo;Hotel|Hotel|rôtél|Substantivo;Reservation|Reserva|rézârvêishân|Substantivo;Key|Chave|kí|Substantivo;Bathroom|Banheiro|bátrum|Substantivo;Shower|Chuveiro|xáuer|Substantivo;Bed|Cama|béd|Substantivo;Morning|Manhã|mórning|Substantivo;Afternoon|Tarde|éftârnúun|Substantivo;Evening|Noite (chegada)|ívning|Substantivo;Weather|Clima|uéder|Substantivo;Rain|Chuva|rêin|Substantivo;Sun|Sol|sân|Substantivo;Week|Semana|uík|Substantivo;Weekend|Fim de semana|uíikênd|Substantivo;Today|Hoje|tudêi|Substantivo;Tomorrow|Amanhã|tumórou|Substantivo;Yesterday|Ontem|iéster-dei|Substantivo;Kitchen|Cozinha|kítchen|Substantivo;Bedroom|Quarto|bédrum|Substantivo;Father|Pai|Fá-der|Substantivo;Mother|Mãe|Má-der|Substantivo;Son|Filho|Sân|Substantivo;Daughter|Filha|Dó-ter|Substantivo;Name|Nome|nêim|Substantivo;Life|Vida|láif|Substantivo;Now|Agora|náu|Substantivo;
+And|E|énd|Conector;Or|Ou|ór|Conector;But|Mas|bât|Conector;Because|Porque|bikóz|Conector;So|Então|sôu|Conector;If|Se|íf|Conector;When|Quando|uén|Conector;Where|Onde|uér|Conector;Why|Por quê|uái|Conector;How|Como|ráu|Conector;What|O que|uót|Conector;Who|Quem|rú|Conector;Which|Qual|uích|Conector;Very|Muito|véri|Conector;Too|Demais|tú|Conector;Also|Também|ólso|Conector;Just|Apenas|djâst|Conector;Only|Somente|ôunli|Conector;Always|Sempre|ólueiz|Conector;Never|Nunca|néver|Conector;Sometimes|Às vezes|sâmtaims|Conector;Usually|Geralmente|iújulí|Conector;Then|Então/Depois|dhén|Conector;Here|Aqui|ríer|Conector;There|Lá|dhér|Conector;Again|De novo|âgén|Conector;Maybe|Talvez|mêibi|Conector;Really|Realmente|ríali|Conector;Okay|Ok|ôukêi|Conector;Yes|Sim|iés|Conector;No|Não|nôu|Conector;Please|Por favor|plíz|Conector;Thanks|Obrigado|thénks|Conector;Sorry|Desculpa|sóri|Conector;Hello|Olá|rêlôu|Conector;Hi|Oi|rái|Conector;Bye|Tchau|bái|Conector;Welcome|Bem-vindo|uélcam|Conector;Of course|Claro que sim|óf córs|Conector;No problem|Sem problema|nôu próblem|Conector;Excuse me|Com licença|ikskíuz mi|Conector;I think|Eu acho|ái thínk|Conector;I know|Eu sei|ái nôu|Conector;I don't know|Não sei|ái dânt nôu|Conector;I agree|Concordo|ái âgrí|Conector;I disagree|Discordo|ái disâgrí|Conector;That's it|É isso|dhéts ít|Conector;Let's go|Vamos lá|léts gôu|Conector;`;
+
+        const processData = (rawData) => {
+            return rawData.replace(/\n/g, '').trim().split(';').filter(i => i).map(item => {
+                const [en, pt, phon, type] = item.split('|');
+                return { 
+                    en: en ? en.trim() : '', 
+                    pt: pt ? pt.trim() : '', 
+                    phon: phon ? phon.trim() : '', 
+                    type: type ? type.trim() : '' 
+                };
+            });
+        };
+
+        const allVocab = processData(rawVocab);
+        
+        const mod1Vocab = allVocab.filter(v => v.type === 'Pronome' || v.type === 'Verbo' || v.type === 'Artigo');
+        const mod2Vocab = allVocab.filter(v => v.type === 'Adjetivo' || v.type === 'Substantivo').slice(0, 70);
+        const mod3Vocab = allVocab.filter(v => v.type === 'Conector' || v.type === 'Substantivo').slice(70).concat(allVocab.filter(v => v.type === 'Conector'));
+
+        // ==========================================
+        // DIÁLOGOS DE CONVERSAÇÃO 
+        // ==========================================
+        const dialogueCafeteria = [
+            { speaker: "A", name: "Atendente", en: "Hello! Welcome to our coffee shop.", pt: "Olá! Bem-vindo à nossa cafetaria.", phon: "Rê-lôu! Uél-kâm tu áur có-fi xóp." },
+            { speaker: "B", name: "Você", en: "Hi! I would like a coffee, please.", pt: "Oi! Eu gostaria de um café, por favor.", phon: "Rái! Ái uúd láik â có-fi, plíiz." },
+            { speaker: "A", name: "Atendente", en: "Sure. Do you want it hot or iced?", pt: "Claro. Você quer quente ou gelado?", phon: "Xór. Dú iú uânt it rót ór áisd?" },
+            { speaker: "B", name: "Você", en: "Iced coffee, please. And a piece of cake.", pt: "Café gelado, por favor. E um pedaço de bolo.", phon: "Áisd có-fi, plíiz. Ênd â píis óf kêik." },
+            { speaker: "A", name: "Atendente", en: "Great choice. What is your name for the order?", pt: "Ótima escolha. Qual é o seu nome para o pedido?", phon: "Grêit tchóis. Uót íz iór nêim fór dâ ór-dâr?" },
+            { speaker: "B", name: "Você", en: "My name is Alex. How much is it?", pt: "Meu nome é Alex. Quanto custa?", phon: "Mái nêim íz Áleks. Ráu mâtch íz it?" },
+            { speaker: "A", name: "Atendente", en: "It is eight dollars. You can pay here.", pt: "São oito dólares. Você pode pagar aqui.", phon: "It íz êit dó-lârs. Iú kén pêi ríir." },
+            { speaker: "B", name: "Você", en: "Here you go. Thank you!", pt: "Aqui está. Obrigado!", phon: "Ríir iú gôu. Tféng-kiu!" }
+        ];
+
+        const dialogueAirport = [
+            { speaker: "A", name: "Agente", en: "Good morning. Passport and ticket, please.", pt: "Bom dia. Passaporte e passagem, por favor.", phon: "Gúd mór-nin. Pás-port ênd tí-ket, plíiz." },
+            { speaker: "B", name: "Você", en: "Good morning. Here they are.", pt: "Bom dia. Aqui estão.", phon: "Gúd mór-nin. Ríir dhêi ár." },
+            { speaker: "A", name: "Agente", en: "Thank you. Do you have any bags to check?", pt: "Obrigado. Você tem malas para despachar?", phon: "Tféng-kiu. Dú iú rév éni bégs tu tchék?" },
+            { speaker: "B", name: "Você", en: "Yes, just one suitcase.", pt: "Sim, apenas uma mala.", phon: "Iés, djâst uân súut-kêis." },
+            { speaker: "A", name: "Agente", en: "Please put it on the scale. Window or aisle seat?", pt: "Por favor, coloque na balança. Assento na janela ou corredor?", phon: "Plíiz pút it ón dâ skêiol. Uín-dou ór áiol síit?" },
+            { speaker: "B", name: "Você", en: "Window seat, please. I like the view.", pt: "Assento na janela, por favor. Eu gosto da vista.", phon: "Uín-dou síit, plíiz. Ái láik dâ viú." },
+            { speaker: "A", name: "Agente", en: "Here is your boarding pass. Have a good flight!", pt: "Aqui está o seu cartão de embarque. Tenha um bom voo!", phon: "Ríir íz iór bór-din pés. Rév â gúd fláit!" },
+            { speaker: "B", name: "Você", en: "Thank you very much. Where is the gate?", pt: "Muito obrigado. Onde é o portão de embarque?", phon: "Tféng-kiu vé-ri mâtch. Uér íz dâ guêit?" }
+        ];
+
+        const dialogueTravel = [
+            { speaker: "A", name: "Rececionista", en: "Welcome to the hotel. How can I help you?", pt: "Bem-vindo ao hotel. Como posso ajudar?", phon: "Uél-kâm tu dâ rôu-tél. Ráu kén ái rélp iú?" },
+            { speaker: "B", name: "Você", en: "I have a reservation under the name John.", pt: "Eu tenho uma reserva no nome John.", phon: "Ái rév â re-zâr-vêi-xân ân-dâr dâ nêim Djón." },
+            { speaker: "A", name: "Rececionista", en: "Let me check. Yes, a room for two nights.", pt: "Deixe-me verificar. Sim, um quarto para duas noites.", phon: "Lét mí tchék. Iés, â rúum fór tú náits." },
+            { speaker: "B", name: "Você", en: "That is correct. Is breakfast included?", pt: "Está correto. O café da manhã está incluído?", phon: "Dhét íz co-rékt. Íz brék-fést in-clúu-ded?" },
+            { speaker: "A", name: "Rececionista", en: "Yes, breakfast is from seven to ten.", pt: "Sim, o café da manhã é das sete às dez.", phon: "Iés, brék-fést íz fróm sé-ven tu tén." },
+            { speaker: "B", name: "Você", en: "Perfect. What is the Wi-Fi password?", pt: "Perfeito. Qual é a senha do Wi-Fi?", phon: "Pâr-fekt. Uót íz dâ uái-fái pés-uord?" },
+            { speaker: "A", name: "Rececionista", en: "It is on the back of your key card.", pt: "Está na parte de trás do seu cartão-chave.", phon: "It íz ón dâ bék óf iór kíi kárd." },
+            { speaker: "B", name: "Você", en: "Excellent. Have a good evening!", pt: "Excelente. Tenha uma boa noite!", phon: "Ék-se-lent. Rév â gúd íiv-nin!" }
+        ];
+
+        // ==========================================
+        // ALGORITMO DE PONTUAÇÃO (LEVENSHTEIN)
+        // ==========================================
+        function getSimilarity(target, transcribed) {
+            let s1 = target.toLowerCase().replace(/[^a-z0-9]/g, '');
+            let s2 = transcribed.toLowerCase().replace(/[^a-z0-9]/g, '');
+            
+            if (s1.length === 0 && s2.length === 0) return 100;
+            if (s1.length === 0 || s2.length === 0) return 0;
+            
+            let longer = s1;
+            let shorter = s2;
+            if (s1.length < s2.length) { longer = s2; shorter = s1; }
+            
+            const costs = [];
+            for (let i = 0; i <= longer.length; i++) {
+                let lastValue = i;
+                for (let j = 0; j <= shorter.length; j++) {
+                    if (i === 0) costs[j] = j;
+                    else {
+                        if (j > 0) {
+                            let newValue = costs[j - 1];
+                            if (longer.charAt(i - 1) !== shorter.charAt(j - 1))
+                                newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+                            costs[j - 1] = lastValue;
+                            lastValue = newValue;
+                        }
+                    }
+                }
+                if (i > 0) costs[shorter.length] = lastValue;
+            }
+            const distance = costs[shorter.length];
+            return Math.round(((longer.length - distance) / parseFloat(longer.length)) * 100);
+        }
+
+        // ==========================================
+        // CONFIGURAÇÃO DA VOZ E RECONHECIMENTO (TTS & STT)
+        // ==========================================
+        let femaleVoice = null;
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let globalRecognition = null;
+        let transcriptResult = "";
+        
+        function setPreferredVoice() {
+            const voices = window.speechSynthesis.getVoices();
+            femaleVoice = voices.find(v => 
+                (v.lang.startsWith('en-US') || v.lang.startsWith('en-GB')) && 
+                (v.name.includes('Female') || v.name.includes('Google US English') || v.name.includes('Samantha') || v.name.includes('Zira') || v.name.includes('Victoria'))
+            );
+            if(!femaleVoice) {
+                femaleVoice = voices.find(v => v.lang.startsWith('en-US')); 
+            }
+        }
+        
+        window.speechSynthesis.onvoiceschanged = setPreferredVoice;
+
+        function playWord(word) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                
+                let textToSpeak = word;
+                if (word.trim().toLowerCase() === "hi!" || word.trim().toLowerCase() === "hi") {
+                    textToSpeak = "Hello, hi."; 
+                }
+
+                const utterance = new SpeechSynthesisUtterance(textToSpeak);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.85; 
+                utterance.pitch = 1.1; 
+                
+                if(!femaleVoice) setPreferredVoice(); 
+                if(femaleVoice) utterance.voice = femaleVoice;
+
+                window.speechSynthesis.speak(utterance);
+            } else {
+                alert("Seu navegador não suporta áudio nativo.");
+            }
+        }
+
+        // ==========================================
+        // MOTOR DE GRAVAÇÃO E AVALIAÇÃO DE PRONÚNCIA
+        // ==========================================
+        let globalMediaRecorder = null;
+        let globalAudioChunks = [];
+        let activeRecordId = null;
+        let activeRecordBtnId = null;
+        let currentTargetText = "";
+        const userAudioBlobs = {};
+
+        async function toggleRecording(btnId, wordId, targetText) {
+            const btn = document.getElementById(btnId);
+            const feedbackEl = document.getElementById(`feedback-${wordId}`);
+
+            // Se já estiver gravando
+            if (globalMediaRecorder && globalMediaRecorder.state === "recording") {
+                globalMediaRecorder.stop();
+                if (globalRecognition) {
+                    try { globalRecognition.stop(); } catch(e){}
+                }
+
+                if (activeRecordBtnId) {
+                    const oldBtn = document.getElementById(activeRecordBtnId);
+                    if (oldBtn) {
+                        oldBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+                        oldBtn.classList.remove('bg-red-500', 'text-white', 'recording-pulse');
+                        oldBtn.classList.add('bg-red-50', 'text-red-500');
+                    }
+                }
+                
+                if (activeRecordId === wordId) {
+                    activeRecordId = null;
+                    activeRecordBtnId = null;
+                    if(feedbackEl) {
+                        feedbackEl.classList.remove('hidden');
+                        feedbackEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Processando a sua pronúncia...';
+                        feedbackEl.className = "mt-3 text-center text-[11px] font-bold rounded-lg py-2 px-3 bg-gray-100 text-gray-500 w-full transition-all";
+                    }
+                    return;
+                }
+            }
+
+            // Iniciar nova gravação
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                globalMediaRecorder = new MediaRecorder(stream);
+                activeRecordId = wordId;
+                activeRecordBtnId = btnId;
+                currentTargetText = targetText || "";
+                globalAudioChunks = [];
+                transcriptResult = "";
+
+                // Configurar Reconhecimento de Voz (Transcição)
+                if (SpeechRecognition) {
+                    globalRecognition = new SpeechRecognition();
+                    globalRecognition.lang = 'en-US';
+                    globalRecognition.interimResults = false;
+                    globalRecognition.maxAlternatives = 1;
+                    globalRecognition.onresult = function(event) {
+                        transcriptResult = event.results[0][0].transcript;
+                    };
+                    try { globalRecognition.start(); } catch(e){}
+                }
+
+                globalMediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) globalAudioChunks.push(e.data);
+                };
+
+                globalMediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(globalAudioChunks, { type: 'audio/webm' });
+                    userAudioBlobs[activeRecordId] = URL.createObjectURL(audioBlob);
+
+                    const pBtn = document.getElementById(`play-self-${activeRecordId}`);
+                    if (pBtn) {
+                        pBtn.disabled = false;
+                        pBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-gray-100', 'text-gray-400');
+                        pBtn.classList.add('bg-emerald-100', 'text-emerald-600', 'hover:bg-emerald-200', 'shadow-md');
+                    }
+                    stream.getTracks().forEach(track => track.stop());
+
+                    // FEEDBACK VISUAL DE PONTUAÇÃO
+                    setTimeout(() => {
+                        const feedbackElPost = document.getElementById(`feedback-${activeRecordId}`);
+                        if(feedbackElPost) {
+                            if(!SpeechRecognition) {
+                                feedbackElPost.className = "mt-3 text-center text-[10px] font-bold rounded-lg py-2 px-3 bg-slate-100 text-slate-500 w-full";
+                                feedbackElPost.innerHTML = "🎙️ Escute a sua gravação para comparar (Avaliação de % não suportada no seu navegador).";
+                            } else if (!transcriptResult) {
+                                feedbackElPost.className = "mt-3 text-center text-[11px] font-bold rounded-lg py-2 px-3 bg-amber-50 text-amber-600 border border-amber-200 w-full";
+                                feedbackElPost.innerHTML = "🤫 Não ouvi bem. Fale mais alto ou mais perto do microfone!";
+                            } else {
+                                const score = getSimilarity(currentTargetText, transcriptResult);
+                                if (score >= 85) {
+                                    feedbackElPost.className = "mt-3 text-center text-[12px] font-black rounded-lg py-2 px-3 bg-emerald-100 text-emerald-700 border border-emerald-300 w-full shadow-sm";
+                                    feedbackElPost.innerHTML = `🏆 ${score}% - Perfeito! Pronúncia exata!`;
+                                } else if (score >= 40) {
+                                    feedbackElPost.className = "mt-3 text-center text-[11px] font-bold rounded-lg py-2 px-3 bg-yellow-50 text-yellow-700 border border-yellow-300 w-full";
+                                    feedbackElPost.innerHTML = `🌟 ${score}% - Quase lá! Faça novamente para ficar verde e chegar nos 100%!`;
+                                } else {
+                                    feedbackElPost.className = "mt-3 text-center text-[11px] font-bold rounded-lg py-2 px-3 bg-rose-50 text-rose-700 border border-rose-300 w-full";
+                                    feedbackElPost.innerHTML = `💪 ${score}% - Continue treinando! Escute o nativo e repita.`;
+                                }
+                            }
+                        }
+                    }, 500); // Pequeno delay para dar tempo ao SpeechRecognition de terminar
+                };
+
+                globalMediaRecorder.start();
+                
+                // Esconder feedback anterior e mostrar botão gravando
+                if(feedbackEl) feedbackEl.classList.add('hidden');
+                btn.innerHTML = '<i class="fa-solid fa-stop"></i>';
+                btn.classList.remove('bg-red-50', 'text-red-500');
+                btn.classList.add('bg-red-500', 'text-white', 'recording-pulse');
+
+            } catch (err) {
+                console.error(err);
+                alert("Permita o acesso ao microfone no seu navegador para poder gravar e testar a sua pronúncia.");
+            }
+        }
+
+        function playSelf(wordId) {
+            if (userAudioBlobs[wordId]) {
+                const audio = new Audio(userAudioBlobs[wordId]);
+                audio.play();
+            } else {
+                alert("Grave a sua voz primeiro clicando no microfone!");
+            }
+        }
+
+        // ==========================================
+        // GESTÃO DE INTERFACE (MÓDULOS)
+        // ==========================================
+        const inglesModules = [
+            { id: 0, title: "Boas-vindas", icon: "fa-flag-usa" },
+            { id: 1, title: "Módulo 1: A Base (Pronomes e Verbos)", icon: "fa-person-running" },
+            { id: 2, title: "Módulo 2: Qualificando (Adjetivos)", icon: "fa-palette" },
+            { id: 3, title: "Módulo 3: O Mundo (Substantivos)", icon: "fa-cube" },
+            { id: 4, title: "Módulo 4: Conversação Real 🗣️", icon: "fa-comments" },
+            { id: 5, title: "Tradutor IA de Pronúncia", icon: "fa-robot" }
+        ];
+
+        let currentModuleIndex = 0;
+        let completedIngles = new Set(JSON.parse(localStorage.getItem('neuroInglesProgress')) || []);
+
+        function renderNav() {
+            const nav = document.getElementById('module-nav');
+            nav.innerHTML = '';
+            
+            inglesModules.forEach(m => {
+                const isCompleted = completedIngles.has(m.id);
+                nav.innerHTML += `
+                    <button id="nav-${m.id}" onclick="renderModuleContent(${m.id})" class="nav-btn w-full text-left flex items-center justify-between p-3 rounded-xl border-l-4 border-transparent text-gray-600 font-semibold hover:bg-gray-50 transition-all mb-2">
+                        <span class="truncate"><i class="fa-solid ${m.icon} w-6 text-center mr-1 opacity-80"></i> ${m.title}</span>
+                        <i class="fa-solid fa-circle-check ${isCompleted ? 'text-blue-500' : 'text-gray-200'}"></i>
+                    </button>
+                `;
+            });
+        }
+
+        function updateProgressBar() {
+            const total = 6; 
+            let percentage = (completedIngles.size / total) * 100;
+            if(percentage > 100) percentage = 100;
+            
+            document.getElementById('progress-bar').style.width = `${percentage}%`; 
+            document.getElementById('progress-text').innerText = `${Math.round(percentage)}%`;
+
+            // MENSAGENS MOTIVACIONAIS DO PROGRESSO GERAL
+            const feedbackProgress = document.getElementById('progress-feedback-msg');
+            if (feedbackProgress) {
+                if (percentage === 0) feedbackProgress.innerText = "Vamos começar a sua jornada! 🚀";
+                else if (percentage < 30) feedbackProgress.innerText = "Ótimo começo! Continue firme! 💪";
+                else if (percentage < 60) feedbackProgress.innerText = `Você já concluiu ${Math.round(percentage)}% do caminho! 🌟`;
+                else if (percentage < 100) feedbackProgress.innerText = `Falta pouco! Quase nos 100%! 🔥`;
+                else feedbackProgress.innerText = "Incrível! Você completou 100%! 🏆";
+            }
+        }
+
+        function completeModule(index) {
+            completedIngles.add(index);
+            localStorage.setItem('neuroInglesProgress', JSON.stringify([...completedIngles]));
+            renderNav();
+            updateProgressBar();
+            renderModuleContent(index);
+            
+            if (index < 5) setTimeout(() => renderModuleContent(index + 1), 300);
+        }
+
+        function renderModuleContent(index) {
+            currentModuleIndex = index;
+            const container = document.getElementById('active-module-container');
+            container.innerHTML = '';
+            container.className = "max-w-4xl mx-auto pb-24 fade-in";
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.className = "nav-btn w-full text-left flex items-center justify-between p-3 rounded-xl border-l-4 border-transparent text-gray-600 font-semibold hover:bg-gray-50 transition-all mb-2";
+            });
+            const activeNav = document.getElementById(`nav-${index}`);
+            if (activeNav) activeNav.className = `nav-btn w-full text-left flex items-center justify-between p-3 rounded-xl border-l-4 border-blue-600 bg-blue-50 text-blue-800 font-bold transition-all mb-2`;
+
+            if (index === 0) {
+                container.innerHTML = `
+                    <div class="bg-gradient-to-br from-blue-500 to-indigo-700 rounded-3xl p-8 md:p-12 text-center shadow-lg text-white relative overflow-hidden mb-8">
+                        <div class="absolute top-0 right-0 opacity-10 transform translate-x-1/4 -translate-y-1/4"><i class="fa-solid fa-microphone-lines text-9xl"></i></div>
+                        <h1 class="text-4xl md:text-5xl font-extrabold mb-4 relative z-10">Welcome! (Bem-vindo!)</h1>
+                        <p class="text-lg md:text-xl font-medium text-blue-50 mb-8 relative z-10">O seu curso de Inglês Fonético focado no método "Shadowing" (Ouça, Grave e Compare).</p>
+                        
+                        <div class="bg-white text-blue-900 p-6 md:p-8 rounded-3xl shadow-lg text-left relative z-10 mb-8">
+                            <h3 class="text-2xl font-black mb-4 border-b-2 border-blue-100 pb-3"><i class="fa-solid fa-chalkboard-user text-blue-500 mr-2"></i> Como a plataforma funciona?</h3>
+                            <p class="text-lg mb-4">Embaixo de cada palavra ou frase deste curso, você encontrará o nosso <strong>Painel de Treino</strong> exclusivo com três botões:</p>
+                            <div class="flex flex-col md:flex-row gap-4 mb-4">
+                                <div class="bg-blue-50 p-4 rounded-xl flex-1 border border-blue-100"><i class="fa-solid fa-headphones text-2xl text-blue-500 mb-2 block"></i><strong>1. Ouvir Nativo:</strong> Oiça a professora virtual a pronunciar com o sotaque correto.</div>
+                                <div class="bg-red-50 p-4 rounded-xl flex-1 border border-red-100"><i class="fa-solid fa-microphone text-2xl text-red-500 mb-2 block"></i><strong>2. Gravar Voz:</strong> Clique para gravar a sua pronúncia (o botão piscará vermelho). Clique de novo para parar e receber uma <strong>Nota de Pronúncia</strong>.</div>
+                                <div class="bg-emerald-50 p-4 rounded-xl flex-1 border border-emerald-100"><i class="fa-solid fa-play text-2xl text-emerald-500 mb-2 block"></i><strong>3. Ouvir-se:</strong> O botão verde ficará ativo. Oiça a sua gravação e compare com a nativa!</div>
+                            </div>
+                        </div>
+
+                        <button onclick="completeModule(0)" class="${completedIngles.has(0) ? 'bg-gray-300 text-gray-500' : 'bg-white text-blue-600 hover:scale-105'} font-bold text-lg py-4 px-10 rounded-full shadow-lg transition-all w-full sm:w-auto uppercase tracking-widest" ${completedIngles.has(0) ? 'disabled' : ''}>
+                            ${completedIngles.has(0) ? '<i class="fa-solid fa-check mr-2"></i> Concluído' : 'Iniciar Módulo 1 <i class="fa-solid fa-arrow-right ml-2"></i>'}
+                        </button>
+                    </div>
+                `;
+            } 
+            else if (index >= 1 && index <= 3) {
+                let vocabList = []; let title = ""; let desc = "";
+                if(index === 1) { vocabList = mod1Vocab; title = "Módulo 1: A Base (Pronomes e Verbos)"; desc = "As palavras estruturais. Você precisa delas para formar qualquer frase."; }
+                if(index === 2) { vocabList = mod2Vocab; title = "Módulo 2: Qualificando (Adjetivos e Objetos)"; desc = "Para descrever o mundo ao seu redor. Lembre-se: em inglês a qualidade (adjetivo) vem antes da coisa!"; }
+                if(index === 3) { vocabList = mod3Vocab; title = "Módulo 3: O Mundo (Conectores e Essenciais)"; desc = "As 'palavras-cola' que unem as ideias e completam a sua fluência."; }
+
+                let cardsHtml = vocabList.map((item, i) => {
+                    let typeColor = 'bg-gray-100 text-gray-600 border-gray-200'; let icon = 'fa-tag';
+                    if (item.type === 'Verbo') { typeColor = 'bg-blue-50 text-blue-600 border-blue-200'; icon = 'fa-person-running'; }
+                    else if (item.type === 'Substantivo') { typeColor = 'bg-emerald-50 text-emerald-600 border-emerald-200'; icon = 'fa-cube'; }
+                    else if (item.type === 'Adjetivo') { typeColor = 'bg-purple-50 text-purple-600 border-purple-200'; icon = 'fa-palette'; }
+                    else if (item.type === 'Pronome') { typeColor = 'bg-orange-50 text-orange-600 border-orange-200'; icon = 'fa-user'; }
+                    else if (item.type === 'Artigo' || item.type === 'Conector') { typeColor = 'bg-slate-100 text-slate-500 border-slate-200'; icon = 'fa-link'; }
+
+                    const uniqueId = `vocab-${index}-${i}`;
+                    const safeEn = item.en.replace(/'/g, "\\'");
+
+                    return `
+                    <div class="vocab-card bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex flex-col relative overflow-hidden h-full">
+                        <div class="mb-4 flex-1">
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="text-2xl font-black text-gray-800">${item.en}</h4>
+                                <span class="${typeColor} border text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded-lg"><i class="fa-solid ${icon} mr-1"></i>${item.type}</span>
+                            </div>
+                            <p class="text-sm text-gray-500 font-bold uppercase tracking-widest mb-3">${item.pt}</p>
+                            <p class="text-sm font-bold text-indigo-700 bg-indigo-50 inline-block px-3 py-1.5 rounded-lg"><i class="fa-solid fa-lips mr-1"></i> Lê-se: <span class="italic">"${item.phon}"</span></p>
+                        </div>
+                        
+                        <!-- Painel de Treino -->
+                        <div class="flex flex-col border-t border-gray-100 pt-3 mt-auto">
+                            <div class="flex items-center gap-2">
+                                <button onclick="playWord('${safeEn}')" class="flex-1 bg-blue-50 text-blue-600 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-100 transition-colors flex items-center justify-center gap-2" title="Ouvir original">
+                                    <i class="fa-solid fa-headphones"></i> Ouvir
+                                </button>
+                                <button id="btn-rec-${uniqueId}" onclick="toggleRecording('btn-rec-${uniqueId}', '${uniqueId}', \`${safeEn}\`)" class="w-12 h-12 shrink-0 bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-colors flex items-center justify-center text-lg" title="Gravar minha voz e Avaliar Pronúncia">
+                                    <i class="fa-solid fa-microphone"></i>
+                                </button>
+                                <button id="play-self-${uniqueId}" onclick="playSelf('${uniqueId}')" disabled class="w-12 h-12 shrink-0 bg-gray-100 text-gray-400 opacity-50 cursor-not-allowed rounded-xl transition-all flex items-center justify-center text-lg" title="Ouvir minha gravação">
+                                    <i class="fa-solid fa-play"></i>
+                                </button>
+                            </div>
+                            <!-- Feedback Score -->
+                            <div id="feedback-${uniqueId}" class="mt-3 text-center text-[11px] font-bold hidden rounded-lg py-2 px-3 w-full transition-all"></div>
+                        </div>
+                    </div>
+                `}).join('');
+
+                container.innerHTML = `
+                    <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 md:p-10 text-left">
+                        <div class="mb-8 border-b border-gray-100 pb-6">
+                            <span class="text-blue-500 font-bold uppercase tracking-widest text-xs mb-1 block">Vocabulário Inteligente</span>
+                            <h2 class="text-3xl font-extrabold text-blue-900"><i class="fa-solid fa-list-ol mr-3 text-blue-400"></i> ${title}</h2>
+                            <p class="text-gray-600 mt-2">${desc}</p>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-10">${cardsHtml}</div>
+                        <div class="mt-12 pt-6 border-t border-gray-100 flex justify-end">
+                            <button onclick="completeModule(${index})" class="${completedIngles.has(index) ? 'bg-gray-300 text-gray-500' : 'bg-blue-600 hover:bg-blue-700 text-white'} font-bold py-4 px-10 rounded-2xl transition-colors shadow-md w-full sm:w-auto" ${completedIngles.has(index) ? 'disabled' : ''}>
+                                ${completedIngles.has(index) ? '<i class="fa-solid fa-check mr-2"></i> Módulo Concluído' : 'Concluir Módulo <i class="fa-solid fa-check ml-2"></i>'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } 
+            else if (index === 4) {
+                const renderDialogue = (dialogueArr, contextPrefix) => {
+                    return dialogueArr.map((line, i) => {
+                        const uniqueId = `dial-${contextPrefix}-${i}`;
+                        const isA = line.speaker === "A";
+                        const bgClass = isA ? "bg-white border-gray-200" : "bg-blue-50 border-blue-200";
+                        const flexDir = isA ? "flex-row" : "flex-row-reverse";
+                        const alignText = isA ? "text-left" : "text-right";
+                        const imgUrl = isA ? "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=100&q=80" : "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=100&q=80";
+                        const safeEn = line.en.replace(/'/g, "\\'");
+
+                        return `
+                        <div class="flex items-start gap-4 mb-6 ${flexDir}">
+                            <img src="${imgUrl}" alt="Avatar" class="w-12 h-12 rounded-full object-cover shadow-sm border-2 border-white mt-1 shrink-0">
+                            <div class="dialogue-bubble ${bgClass} p-5 rounded-2xl shadow-sm border flex-1 relative w-full">
+                                <p class="font-bold text-[10px] uppercase tracking-widest text-gray-400 mb-2 ${alignText}">${line.name}</p>
+                                <p class="font-black text-xl text-gray-800 mb-1 ${alignText}">${line.en}</p>
+                                <p class="text-sm text-gray-500 mb-4 ${alignText}">${line.pt}</p>
+                                <div class="${alignText} mb-4">
+                                    <span class="text-xs font-bold text-blue-700 bg-white border border-blue-100 inline-block px-3 py-1.5 rounded-lg shadow-sm"><i class="fa-solid fa-lips mr-1 text-blue-400"></i> "${line.phon}"</span>
+                                </div>
+                                
+                                <div class="flex flex-col border-t border-black/5 pt-3 mt-auto">
+                                    <div class="flex items-center gap-2 ${isA ? 'justify-start' : 'justify-end'}">
+                                        <button onclick="playWord('${safeEn}')" class="bg-blue-100 text-blue-700 w-10 h-10 rounded-full flex items-center justify-center hover:bg-blue-600 hover:text-white transition-colors shadow-sm" title="Ouvir Nativo">
+                                            <i class="fa-solid fa-headphones"></i>
+                                        </button>
+                                        <button id="btn-rec-${uniqueId}" onclick="toggleRecording('btn-rec-${uniqueId}', '${uniqueId}', \`${safeEn}\`)" class="bg-red-100 text-red-600 w-10 h-10 rounded-full flex items-center justify-center hover:bg-red-600 hover:text-white transition-colors shadow-sm" title="Gravar Minha Voz">
+                                            <i class="fa-solid fa-microphone"></i>
+                                        </button>
+                                        <button id="play-self-${uniqueId}" onclick="playSelf('${uniqueId}')" disabled class="bg-gray-200 text-gray-400 opacity-50 cursor-not-allowed w-10 h-10 rounded-full flex items-center justify-center transition-colors" title="Ouvir Minha Gravação">
+                                            <i class="fa-solid fa-play"></i>
+                                        </button>
+                                    </div>
+                                    <!-- Feedback Score -->
+                                    <div id="feedback-${uniqueId}" class="mt-3 text-center text-[11px] font-bold hidden rounded-lg py-2 px-3 w-full transition-all"></div>
+                                </div>
+                            </div>
+                        </div>`;
+                    }).join('');
+                };
+
+                container.innerHTML = `
+                    <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 md:p-10 text-left">
+                        <div class="mb-10 border-b border-gray-100 pb-6">
+                            <span class="text-rose-500 font-bold uppercase tracking-widest text-xs mb-1 block">Contexto Imersivo</span>
+                            <h2 class="text-3xl font-extrabold text-rose-900"><i class="fa-solid fa-comments mr-3 text-rose-400"></i> Conversação Real</h2>
+                            <p class="text-gray-600 mt-4 text-lg">Aplique o vocabulário em 3 cenários práticos (8 interações cada). <strong>Tente alcançar os 100% gravando a sua voz e conferindo o resultado verde!</strong></p>
+                        </div>
+                        
+                        <div class="space-y-16">
+                            <div class="bg-slate-50 p-6 md:p-8 rounded-[2rem] border border-gray-200 shadow-inner">
+                                <h3 class="text-2xl font-black text-amber-800 mb-8 flex items-center border-b border-amber-200 pb-4"><i class="fa-solid fa-mug-hot text-amber-500 mr-3 text-3xl"></i> Cena 1: Na Cafetaria</h3>
+                                ${renderDialogue(dialogueCafeteria, 'cafe')}
+                            </div>
+                            
+                            <div class="bg-slate-50 p-6 md:p-8 rounded-[2rem] border border-gray-200 shadow-inner">
+                                <h3 class="text-2xl font-black text-blue-800 mb-8 flex items-center border-b border-blue-200 pb-4"><i class="fa-solid fa-plane-departure text-blue-500 mr-3 text-3xl"></i> Cena 2: No Aeroporto</h3>
+                                ${renderDialogue(dialogueAirport, 'aero')}
+                            </div>
+
+                            <div class="bg-slate-50 p-6 md:p-8 rounded-[2rem] border border-gray-200 shadow-inner">
+                                <h3 class="text-2xl font-black text-teal-800 mb-8 flex items-center border-b border-teal-200 pb-4"><i class="fa-solid fa-suitcase-rolling text-teal-500 mr-3 text-3xl"></i> Cena 3: Viagem / Hotel</h3>
+                                ${renderDialogue(dialogueTravel, 'hotel')}
+                            </div>
+                        </div>
+                        
+                        <div class="mt-12 pt-6 border-t border-gray-100 flex justify-end">
+                            <button onclick="completeModule(${index})" class="${completedIngles.has(index) ? 'bg-gray-300 text-gray-500' : 'bg-rose-600 hover:bg-rose-700 text-white'} font-bold py-4 px-10 rounded-2xl transition-colors shadow-md w-full sm:w-auto" ${completedIngles.has(index) ? 'disabled' : ''}>
+                                ${completedIngles.has(index) ? '<i class="fa-solid fa-check mr-2"></i> Módulo Concluído' : 'Concluir Módulo <i class="fa-solid fa-check ml-2"></i>'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } 
+            else if (index === 5) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-[2.5rem] p-6 md:p-10 border border-gray-100 shadow-sm text-left">
+                        <div class="mb-8 border-b border-gray-100 pb-6">
+                            <span class="text-blue-500 font-bold uppercase tracking-widest text-xs mb-1 block">Ferramenta Livre</span>
+                            <h2 class="text-3xl md:text-4xl font-extrabold text-blue-900"><i class="fa-solid fa-robot mr-3 text-blue-400"></i> Tradutor Fonético IA ✨</h2>
+                            <p class="text-gray-600 mt-4 text-lg">Escreva qualquer frase em Português. A nossa IA traduz, mostra a fonética abrasileirada e avalia a sua pronúncia com a pontuação 0 a 100%!</p>
+                        </div>
+                        
+                        <div class="bg-blue-50 rounded-3xl p-6 border border-blue-100 shadow-inner">
+                            <label for="ai-english-input" class="block text-blue-900 font-bold mb-3 text-xl">O que você deseja aprender a falar hoje?</label>
+                            <textarea id="ai-english-input" rows="3" class="w-full p-5 rounded-2xl border-2 border-blue-200 focus:border-blue-500 outline-none transition-all resize-none text-gray-700 font-medium text-lg" placeholder="Ex: Onde fica o supermercado mais próximo?"></textarea>
+                            
+                            <div class="flex justify-end mt-4">
+                                <button onclick="generateEnglishTranslation()" id="btn-ai-english-translate" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-10 rounded-2xl transition-colors flex items-center justify-center w-full sm:w-auto shadow-md text-lg gap-3">
+                                    Traduzir com IA ✨
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="ai-english-result-container" class="mt-8 hidden">
+                            <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center"><i class="fa-solid fa-language text-blue-500 mr-3"></i> Resultado da Tradução:</h3>
+                            <div id="ai-english-result-content" class="bg-white border-2 border-blue-100 p-6 md:p-8 rounded-3xl shadow-sm text-gray-700 text-lg">
+                                <!-- Gerado pela IA -->
+                            </div>
+                        </div>
+
+                        <div class="mt-16 flex justify-center">
+                            <button onclick="completeModule(5)" class="${completedIngles.has(5) ? 'bg-amber-500 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white'} font-black py-4 px-12 rounded-full shadow-lg hover:scale-105 transition-all uppercase tracking-widest">
+                                ${completedIngles.has(5) ? '<i class="fa-solid fa-certificate mr-2"></i> Você já concluiu o curso!' : 'FINALIZAR CURSO DE INGLÊS'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        async function generateEnglishTranslation() {
+            const inputEl = document.getElementById('ai-english-input');
+            const btnEl = document.getElementById('btn-ai-english-translate');
+            const resultContainer = document.getElementById('ai-english-result-container');
+            const resultContent = document.getElementById('ai-english-result-content');
+            
+            const text = inputEl.value.trim();
+            if(!text) return alert('Por favor, digite algo para traduzir!');
+
+            btnEl.disabled = true;
+            btnEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Processando...';
+            
+            resultContainer.classList.remove('hidden');
+            resultContent.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-10">
+                    <i class="fa-solid fa-robot fa-bounce text-5xl text-blue-300 mb-4"></i>
+                    <p class="text-blue-600 font-bold animate-pulse text-center">Processando a tradução e fonética...<br><span class="text-sm text-blue-400 font-normal">Isso exige que a chave da API esteja configurada no código.</span></p>
+                </div>`;
+
+            const systemPrompt = `Você é um professor de Inglês neuroinclusivo. Retorne um JSON estruturado com:
+{
+    "translated": "A frase traduzida para inglês",
+    "englishText": "A frase exata em inglês para usar no sintetizador de voz",
+    "phonetic": "A fonética abrasileirada (ex: Uót is iór nêim?)"
+}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: text }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                generationConfig: { temperature: 0.2, responseMimeType: "application/json" }
+            };
+
+            try {
+                if(apiKey === "") throw new Error('API Key ausente');
+
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+                });
+                
+                if(!response.ok) throw new Error('Erro na API');
+                
+                const data = await response.json();
+                const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (textResponse) {
+                    const parsed = JSON.parse(textResponse);
+                    const uniqueId = 'ai-trans-1';
+                    const safeEn = parsed.englishText.replace(/'/g, "\\'");
+                    
+                    resultContent.innerHTML = `
+                        <div class="space-y-6">
+                            <div class="bg-gray-50 p-5 rounded-2xl border border-gray-200 shadow-sm">
+                                <p class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-2">Em Inglês:</p>
+                                <p class="text-3xl font-black text-gray-800">${parsed.translated}</p>
+                            </div>
+                            <div class="bg-blue-50 p-5 rounded-2xl border border-blue-200 shadow-inner">
+                                <p class="text-sm font-bold text-blue-500 uppercase tracking-widest mb-2">Como se lê (Fonética):</p>
+                                <p class="text-2xl font-bold text-blue-800 italic">"${parsed.phonetic}"</p>
+                            </div>
+                            <div class="flex flex-col pt-4 border-t border-gray-100">
+                                <div class="flex items-center gap-3">
+                                    <button onclick="playWord('${safeEn}')" class="flex-1 bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold py-4 rounded-xl flex items-center justify-center gap-3 transition-colors text-lg border border-blue-200 shadow-sm">
+                                        <i class="fa-solid fa-headphones text-2xl"></i> Ouvir Nativo
+                                    </button>
+                                    <button id="btn-rec-${uniqueId}" onclick="toggleRecording('btn-rec-${uniqueId}', '${uniqueId}', \`${safeEn}\`)" class="flex-1 bg-red-50 hover:bg-red-100 text-red-600 font-bold py-4 rounded-xl flex items-center justify-center gap-3 transition-colors text-lg border border-red-200 shadow-sm">
+                                        <i class="fa-solid fa-microphone text-2xl"></i> Gravar Voz
+                                    </button>
+                                    <button id="play-self-${uniqueId}" onclick="playSelf('${uniqueId}')" disabled class="flex-1 bg-gray-100 text-gray-400 opacity-50 cursor-not-allowed font-bold py-4 rounded-xl flex items-center justify-center gap-3 transition-all text-lg border border-gray-200 shadow-sm">
+                                        <i class="fa-solid fa-play text-2xl"></i> Ouvir Gravação
+                                    </button>
+                                </div>
+                                <div id="feedback-${uniqueId}" class="mt-3 text-center text-sm font-bold hidden rounded-lg py-3 px-3 w-full transition-all"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultContent.innerHTML = '<div class="bg-red-50 text-red-600 p-4 rounded-lg flex items-center"><i class="fa-solid fa-triangle-exclamation text-2xl mr-3"></i> O Tradutor IA precisa da Chave de API Google configurada no código para funcionar no seu computador.</div>';
+            }
+
+            btnEl.disabled = false;
+            btnEl.innerHTML = 'Traduzir com IA ✨';
+        }
+
+        // Iniciar App
+        window.onload = () => {
+            renderNav();
+            updateProgressBar();
+            renderModuleContent(0);
+        };
+    </script>
+</body>
+</html>
